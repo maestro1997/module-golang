@@ -45,65 +45,36 @@ func NewShift(shift int) Cipher {
     c = Shift{int32(shift)}
     return c
 }
-
+///// Vigenere Encode and Decode functions
 func (vig Vigenere) Encode (s string) string {
-    enc := []rune(s)
-    j := 0
-    i := 0
-    flag := true
-    key := vig.key
-    lenn := len(key)
-    for ; i < len(s); i++ {
-        flag = false
-        if (enc[i] <= 90 && enc[i] >= 65) {
-            enc[i] += 32
-	    flag = true
-	} else {
-            if (enc[i] >= 97 && enc[i] <= 122) {
-                flag = true
-	    }  
-	}
-	if flag {
-	    enc[j] = enc[i] + int32(key[j % lenn] - 97)
-            if enc[j] > 122 {
-                enc[j] -= 26
-	    }
-	    j++
-    }
-    }
-    return string(enc[0:j]) 
+    s = prepare_str(s)
+    return vig.Decode_t(s,-1)
 }
 
 func (vig Vigenere) Decode (s string) string {
+    return vig.Decode_t(s,1)
+}
+
+func (vig Vigenere) Decode_t (s string, sign int32) string {
     dec := []rune(s)
-    j := 0
     i := 0
-    flag := true
     key := vig.key
     lenn := len(key)
     for ; i < len(s); i++ {
-        flag = false
-        if (dec[i] <= 90 && dec[i] >= 65) {
-            dec[i] += 32
-	    flag = true
+        dec[i] = dec[i] - sign*(int32(key[i % lenn] - 97))
+	if dec[i] > 122 {
+            dec[i] -= 26
 	} else {
-            if (dec[i] >= 97 && dec[i] <= 122) {
-                flag = true
-	    }  
+            if dec[i] < 97 {
+                dec[i] += 26 
+            }
 	}
-	if flag {
-            dec[j] = dec[i] - int32(key[j % lenn] - 97)
-	    if dec[j] < 97 {
-                dec[j] += 26
-	    }
-	    j++
         }
-    }
-    return string(dec[0:j])      
+    return string(dec)      
 }
-
+////////  Shift Encode and Decode functions
 func (sh Shift) Encode(s string) string {
-    return Encode_t(s, sh.shift)
+    return Decode_t(prepare_str(s), -sh.shift)
 }
 
 func (sh Shift) Decode(s string) string {
@@ -126,11 +97,6 @@ func prepare_str(s string) string{  // "downcasing" and removing non-letter char
 	}
     }
     return string(out[0:j])
-}
-
-func Encode_t(s string, shift int32) string {
-    s = prepare_str(s)
-    return Decode_t(s, -shift)
 }
 
 func Decode_t (s string, shift int32) string {

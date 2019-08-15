@@ -268,3 +268,4 @@ func BenchmarkDecVigenere(b *testing.B) {
 		}
 	}
 }
+

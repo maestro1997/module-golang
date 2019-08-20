@@ -11,51 +11,52 @@ var cutting_time = 5 // time of hair cutting
 var walk_time = 3    // time of walk of client that can't seat on chair
 var check_time = 1   // time for what barber checks waiting room
 
-
-
-
-
 type Barber struct {
     client chan Client
     waiters chan Client
     state int   // 0 -sleeps, 1 - cuts, 2 - checks room
+    mutex int   // 1 if client checks barber
 }
 
 type Client struct {
     id int
 }
 
-func CreateClient(id int) Client {
-    
+func CreateClient(id int) Client {  
     return Client{id}
 }
 
 func CreateBarber (room_size int) Barber {
-    barber := Barber{make (chan Client,1), make (chan Client,room_size),0}
+    barber := Barber{make (chan Client,1), make (chan Client,room_size),0,0}
     return barber
 }
 
-func (b Barber) run_barber () {
-    fmt.Println("Barber is sleeping\n")
+func (b Barber) run_barber () { 
     for {
-         client := <-b.client
-	 b.haircut(client)
-	 b.check_room()
-	 select  {		 
+         select {
+	 case c:= <-b.client:
+	     b.haircut(c)
+	     b.check_room()
+	 default:    
+	     select  {		 
              case c:= <-b.waiters:
        		 b.client <- c
 		 fmt.Printf("Barber takes client %d\n",c.id)
 	     default:
 		 fmt.Printf("Barber is going to sleep\n")
-	 }
+		 b.state = 0
+	     }
+         }
     }
 }
 
 func (b Barber) check_room() {
+    b.state = 2
     time.Sleep(time.Second)
 }
 
 func (b Barber) haircut (client Client) {
+   b.state = 1	
    fmt.Printf("Barber serves client %d\n",client.id)
    time.Sleep(time.Second)
    <-b.client
@@ -71,22 +72,22 @@ func (c Client) run_client (b *Barber, flag int) {
         way = "return"
     }	
     fmt.Printf("Client %d %s to barbershop\n",c.id,way)
-    for {
+    for { 
          select {
-	 case <-b.client:
-	     b.client <- c
-	     fmt.Printf("Client %d wokes up the barber\n",c.id)
-	 default : 
+	 case <-b.client : 
 	     select {
 	     case  b.waiters <- c:
 	         fmt.Printf("Client %d seats in chair\n",c.id)
-		 break
 	     default:
 	         fmt.Printf("Client %d went for walk from barbershop\n",c.id)
 		 time.Sleep(time.Second)
 		 c.run_client(b,1)
 	     }
-	 }
+         default:
+	     b.client <- c
+	     fmt.Printf("Client %d woke up barber\n",c.id)
+        
+     }
     }
 }
 

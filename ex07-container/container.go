@@ -10,24 +10,23 @@ import (
 func main() {
     switch os.Args[1] {
     case "run":
-	 	run()
+	run()
     case "child":
-		child()
+	child()
     default:
-		panic("what??")
+	panic("what??")
     }
 }
 
 func run() {
-	cmd := exec.Command("/proc/self/exe", append([]string{"child"}, os.Args[2:]...)...)
-	cmd.Stdin = os.Stdin
+    cmd := exec.Command("/proc/self/exe", append([]string{"child"}, os.Args[2:]...)...)
+    cmd.Stdin = os.Stdin
     cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	cmd.SysProcAttr = &syscall.SysProcAttr {
-		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID,
-	}
-	must (cmd.Run())
+    cmd.Stderr = os.Stderr
+    cmd.SysProcAttr = &syscall.SysProcAttr {
+	Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID,
+    }
+    must (cmd.Run())
 }
 
 func child() {
@@ -36,11 +35,10 @@ func child() {
     cmd.Stdin = os.Stdin
     cmd.Stdout = os.Stdout
     cmd.Stderr = os.Stderr
-    
-	must(syscall.Chroot("/home/anton/work/ubuntu-base/"))
+    must(syscall.Chroot("/home/anton/work/ubuntu-base/"))
     must(os.Chdir("/"))
-	must(syscall.Mount("proc", "proc", "proc", 0, ""))
-	must(cmd.Run())
+    must(syscall.Mount("proc", "proc", "proc", 0, ""))
+    must(cmd.Run())
 }
 func must(err error) {
     if err != nil {

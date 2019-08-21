@@ -75,12 +75,16 @@ func HairCut(c *Client, b *Barber) {
 
 func run_client(c *Client, b *Barber, wr chan<- *Client, wakers chan<- *Client,mode int) {
     time.Sleep(time.Millisecond * 50)
-    fmt.Printf("%s came into barbershop\n",c)
-	flag := 0
-	if len(wr) > 0 {
+    if mode == 0 {
+    	fmt.Printf("%s came into barbershop\n",c)
+    } else {
+        fmt.Printf("%s returned to barbershop\n",c)
+    }	
+    flag := 0
+    if len(wr) > 0 {
         flag = 1
-	}
-	b.Lock()
+    }
+    b.Lock()
     if flag == 0 {
 	    fmt.Printf("%s checks, barber %s | in room: %d\n",c, b , len(wr))
     }

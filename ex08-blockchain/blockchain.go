@@ -6,9 +6,9 @@ import (
 	"bytes"
 	"strconv"
 	"crypto/sha256"
-    "os"
+	"os"
 	"database/sql"
-    _ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type Block struct {
@@ -43,24 +43,24 @@ func AppendBlock(db *sql.DB, b *Block) {
 func CreateTable(db *sql.DB) {
 	db.Exec("CREATE TABLE IF NOT EXISTS blockchain (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp INTEGER, data TEXT, hash TEXT,prevHash TEXT)")
 	row :=db.QueryRow("SELECT COUNT(*) FROM blockchain")
-    count := 0
-    row.Scan(&count)
-    if count == 0 {
+	count := 0
+	row.Scan(&count)
+	if count == 0 {
 		AppendBlock(db, NewGenesisBlock())
 	}
 }
 
 func getPrevHash(db *sql.DB) []byte {
-    row := db.QueryRow("SELECT hash FROM blockchain WHERE id=(SELECT MAX(id) FROM blockchain)")
-    var prevHash []byte
+	row := db.QueryRow("SELECT hash FROM blockchain WHERE id=(SELECT MAX(id) FROM blockchain)")
+	var prevHash []byte
 	row.Scan(&prevHash) 
 	return prevHash
 }
 
 func AddBlock(db *sql.DB, data string) {
-    prevHash := getPrevHash(db)
-    b := NewBlock(data, prevHash)
-    b.PrevBlockHash = prevHash
+	prevHash := getPrevHash(db)
+	b := NewBlock(data, prevHash)
+	b.PrevBlockHash = prevHash
 	AppendBlock(db, b)
 }
 
@@ -69,19 +69,17 @@ func PrintBlockChain(db *sql.DB) {
 }
 
 func main() {
-    var data string
-    db, err := sql.Open("sqlite3", "bc.db")
-    if err != nil {
-        panic(err)
-    }
-    defer db.Close()
-    CreateTable(db)
-
+	var data string
+	db, err := sql.Open("sqlite3", "bc.db")
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+	CreateTable(db)
 	if os.Args[1] == "add" {
-        fmt.Print("Please, take data : ")
+		fmt.Print("Please, take data : ")
 		fmt.Scanf("%s", &data)
-		AddBlock(db, data)
-		
+		AddBlock(db, data)	
 	}
 	if os.Args[1] == "list" {
 		PrintBlockChain(db)

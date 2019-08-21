@@ -53,7 +53,7 @@ func CreateTable(db *sql.DB) {
 func getPrevHash(db *sql.DB) []byte {
 	row := db.QueryRow("SELECT hash FROM blockchain WHERE id=(SELECT MAX(id) FROM blockchain)")
 	var prevHash []byte
-	row.Scan(&prevHash) 
+	row.Scan(&prevHash)
 	return prevHash
 }
 
@@ -65,25 +65,41 @@ func AddBlock(db *sql.DB, data string) {
 }
 
 func PrintBlockChain(db *sql.DB) {
-	
+	rows, _ := db.Query("SELECT id,timestamp,data FROM blockchain")
+	defer rows.Close()
+	var timestamp int64
+	var data []byte
+	var id int;
+	for rows.Next() {
+		rows.Scan(&id,&timestamp,&data)
+		fmt.Printf("Block #%d : timestamp = %d, data = %p\n",id,timestamp,data)
+	}
 }
 
 func main() {
+	if len(os.Args) < 2 {
+		fmt.Println("You didn,t choose action!")
+		return
+	}
 	var data string
 	db, err := sql.Open("sqlite3", "bc.db")
 	if err != nil {
-		panic(err)
+		fmt.Println("DB opening error")
+		return
 	}
 	defer db.Close()
 	CreateTable(db)
 	if os.Args[1] == "add" {
 		fmt.Print("Please, take data : ")
 		fmt.Scanf("%s", &data)
-		AddBlock(db, data)	
+		AddBlock(db, data)
+		return
 	}
 	if os.Args[1] == "list" {
 		PrintBlockChain(db)
+		return
 	}
+	fmt.Println("Error: unknown command")
 }
 
 

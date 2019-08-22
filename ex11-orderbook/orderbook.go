@@ -1,56 +1,48 @@
-//package orderbook
-package main
-
-type Trade struct {
-	Bid    *Order
-	Ask    *Order
-	Volume uint64
-	Price  uint64
-}
+package orderbook
 
 type Orderbook struct {
-	Bids []MyOrder
-	Asks []MyOrder
-}
-
-type MyOrder struct {
-	Id    int
-	Kind  byte     // 2 - LIMIT, 1 - MARKET
-	Count uint64
-	Price uint64
-}
-
-type Order struct {
-	Id     int
-	Side   byte
-	Kind   byte
-	Count  uint64
-	Price  uint64
+	Asks   []*Order
+	Bids   []*Order
+	Trades []*Trade 
 }
 
 func New() *Orderbook {
-	Bids := make([]MyOrder,0)
-	Asks := make([]MyOrder,0)
-	Orderbook := Orderbook{Bids,Asks}
-	return &Orderbook
-}
-
-func handle_bid(orderbook *Orderbook, order *MyOrder) ([]*Trade, *Order) {
-	return nil, nil
-}
-
-func handle_ask(orderbook *Orderbook, order *MyOrder) ([]*Trade, *Order) {
-	return nil, nil
+	Orderbook = &Orderbook{}
+	Orderbook.Asks   = []*Order{}
+	Orderbook.Bids   = []*Order{}
+	Orderbook.Trades = []*Trade{}
+	return Orderbook
 }
 
 func (orderbook *Orderbook) Match(order *Order) ([]*Trade, *Order) {
-	MyOrder := MyOrder{order.Id, order.Kind, order.Count, order.Price}
-	if order.Side == 1 {
-		return handle_bid(orderbook, &MyOrder)
+	if order.Side == SideBid {
+		return orderbook.HandleAsk(order)
 	}
-	return handle_ask(orderbook, &MyOrder)
+	return orderbook.HandleBid(order)
 }
 
-func main() {
-
+func (ob *Orderbook) HandleAsk(order *Order) {
+	var bid Order
+	for i := 0; i < len(ob.Bids); i++ {
+		bid = ob.Bids[i]
+		if bid.Price < order.Price {
+			continue
+		}
+		
+	}
+	return nil,nil
 }
+
+
+func (ob *Orderbook) HandleBid(order *Order) {
+	var ask Order
+	for i := 0; i < len(ob.Asks); i++ {
+		bid = ob.Asks[i]
+		if bid.Price > order.Price {
+			continue
+		}
+	}
+	return nil,nil
+}
+
+

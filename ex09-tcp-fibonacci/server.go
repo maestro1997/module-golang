@@ -4,46 +4,45 @@ import (
 	"net"
 	"fmt"
 	"bufio"
-	//"strings"
 	"strconv"
+	"time"
+	"math/big"
 )
 
-func fibonacci(n int) int {
-	a0 := 0
-	a1 := 1
-	tmp := 0
-	for i:=0; i < n; i++ {
-		tmp = a0
-		a0 = a1
-		a1 = a1 + tmp
+func fibonacci(n int) *big.Int {
+	a0 := big.NewInt(0)
+	a1 := big.NewInt(1)
+	for i := 0; i < n; i++ {
+		a0, a1 = a1, a0.Add(a0, a1)
 	}
 	return a0
 }
 
 func main() {
-	var output string
-	var fib int
-	ln, _ := net.Listen("tcp", ":8104")
+	var input string
+	var output *big.Int
+	cache := make(map[string]*big.Int)
+	fmt.Println("Launching server...")
+	ln, _ := net.Listen("tcp", ":8412")
 	conn, _ := ln.Accept()
 	defer conn.Close()
 	for {
 		message, _ := bufio.NewReader(conn).ReadString('\n')
-		fmt.Printf("Message from client :%s lolol",string(message))
-		n, err := strconv.Atoi(string(message))
-		switch {
-		case err!= nil:
-			output = "Bad data"
-			conn.Close()
-		case n < 0:
-			output = "Negative integer Error"
-		default:
-			fib = fibonacci(n)
-			output = "F(" + strconv.Itoa(n) + ") = " + strconv.Itoa(fib)
+		input = string(message)
+		input = input[:len(input) - 1]	
+		elem, ok := cache[input]
+		t1 := time.Now()
+		if ok {
+			output = elem
+		} else {
+			n, _ := strconv.Atoi(input)
+			output = fibonacci(n)
 		}
-		conn.Write([]byte(output + "\n"))
+		time := time.Since(t1)
+
+		conn.Write([]byte(time.String() + " " +output.String() + "\n"))
+		if !ok {
+			cache[input] = output
+		}
 	}
 }
-
-
-
-

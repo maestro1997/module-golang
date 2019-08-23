@@ -7,7 +7,7 @@ type Orderbook struct {
 }
 
 func New() *Orderbook {
-	Orderbook = &Orderbook{}
+	Orderbook := &Orderbook{}
 	Orderbook.Asks   = []*Order{}
 	Orderbook.Bids   = []*Order{}
 	Orderbook.Trades = []*Trade{}
@@ -21,28 +21,36 @@ func (orderbook *Orderbook) Match(order *Order) ([]*Trade, *Order) {
 	return orderbook.HandleBid(order)
 }
 
-func (ob *Orderbook) HandleAsk(order *Order) {
-	var bid Order
+func (ob *Orderbook) HandleAsk(order *Order) ([]*Trade, *Order) {
+	if len(ob.Bids) == 0 {
+		ob.Asks = append(ob.Asks, order)
+		return nil, order
+	}
+	var bid *Order
 	for i := 0; i < len(ob.Bids); i++ {
 		bid = ob.Bids[i]
 		if bid.Price < order.Price {
 			continue
 		}
-		
 	}
 	return nil,nil
 }
 
-
-func (ob *Orderbook) HandleBid(order *Order) {
-	var ask Order
+func (ob *Orderbook) HandleBid(order *Order) ([]*Trade, *Order) {
+	if len(ob.Asks) == 0 {
+		ob.Bids = append(ob.Asks, order)
+		return nil, order
+	}
+	var ask *Order
 	for i := 0; i < len(ob.Asks); i++ {
-		bid = ob.Asks[i]
-		if bid.Price > order.Price {
+		ask = ob.Asks[i]
+		if ask.Price > order.Price {
 			continue
 		}
 	}
 	return nil,nil
 }
 
-
+func (ob *Orderbook) AddBid(order *Order) {
+	ob.Bids = append(ob.Bids,order)
+}

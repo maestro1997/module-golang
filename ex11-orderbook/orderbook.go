@@ -32,73 +32,76 @@ func New() *Orderbook {
 }
 
 func (ob *Orderbook) Match(order *Order) ([]*Trade, *Order) {
-	catalog := ob.Bids
-	catalog2 := ob.Asks
-	if order.Side == 2 {
-		catalog = ob.Asks
-		catalog2 = ob.Bids
+	if order.Side == 1 {
+		return ob.MatchBid(order)
 	}
+	return ob.MatchAsk(order)
+}
+
+func (ob *Orderbook) MatchBid(order *Order) ([]*Trade, *Order) {
 	Trades := make([]*Trade, 0)
 	for {
-		ob.BestOffer(order)
 		index := ob.BestOffer(order)
 		if index == -1 {
-			catalog = append(catalog, order)
-			if order.Side == 2 {
-				ob.Asks = catalog
-			} else {
-				ob.Bids = catalog
-			}
+			ob.Bids = append(ob.Bids, order)
 			return Trades, order
 		}
-		offer := catalog2[index]
-		if offer.Volume >= order.Volume {
-			ask := offer
-			bid := order
-			if order.Side == 2 {
-				ask = order
-				bid = offer
-			}
-			trade := Trade{bid, ask, order.Volume, offer.Price}
+		fmt.Println("LOLLLL")
+		ask := ob.Asks[index]
+		fmt.Println("Index", index)
+		if ask.Volume >= order.Volume {
+			trade := Trade{order, ask, order.Volume, ask.Price}
 			Trades = append(Trades, &trade)
-			offer.Volume -= order.Volume
-			if offer.Volume == 0 {
-				if order.Side == 2 {
-					catalog2 = ob.Bids
+			ask.Volume = ask.Volume - order.Volume
+			if ask.Volume == 0 {
+				if index == len(ob.Asks)-1 {
+					ob.Asks = ob.Asks[:index]
 				} else {
-					catalog2 = ob.Asks
-				}
-				if index == len(catalog2)-1 {
-					catalog = catalog2[:index]
-				} else {
-					catalog = append(catalog2[:index], catalog2[index+1:]...)
-				}
-				if order.Side == 1 {
-					ob.Asks = catalog
-				} else {
-					ob.Bids = catalog
+					ob.Asks = append(ob.Asks[:index], ob.Asks[index+1:]...)
 				}
 			}
 			return Trades, nil
 		}
-		ask := offer
-		bid := order
-		if order.Side == 2 {
-			ask = order
-			bid = offer
-		}
-		trade := Trade{bid, ask, offer.Volume, offer.Price}
+		trade := Trade{order, ask, ask.Volume, ask.Price}
 		Trades = append(Trades, &trade)
-		order.Volume -= offer.Volume
-		if index == len(catalog2)-1 {
-			catalog = catalog2[:index]
+		order.Volume -= ask.Volume
+		if index == len(ob.Asks)-1 {
+			ob.Asks = ob.Asks[:index]
 		} else {
-			catalog = append(catalog2[:index], catalog2[index+1:]...)
+			ob.Asks = append(ob.Asks[:index], ob.Asks[index+1:]...)
 		}
-		if order.Side == 1 {
-			ob.Asks = catalog
+	}
+}
+
+func (ob *Orderbook) MatchAsk(order *Order) ([]*Trade, *Order) {
+	Trades := make([]*Trade, 0)
+	for {
+		index := ob.BestOffer(order)
+		if index == -1 {
+			ob.Asks = append(ob.Asks, order)
+			return Trades, order
+		}
+		bid := ob.Bids[index]
+		if bid.Volume >= order.Volume {
+			trade := Trade{bid, order, order.Volume, bid.Price}
+			Trades = append(Trades, &trade)
+			bid.Volume = bid.Volume - order.Volume
+			if bid.Volume == 0 {
+				if index == len(ob.Bids)-1 {
+					ob.Bids = ob.Bids[:index]
+				} else {
+					ob.Bids = append(ob.Bids[:index], ob.Bids[index+1:]...)
+				}
+			}
+			return Trades, nil
+		}
+		trade := Trade{bid, order, bid.Volume, bid.Price}
+		Trades = append(Trades, &trade)
+		order.Volume = order.Volume - bid.Volume
+		if index == len(ob.Bids)-1 {
+			ob.Bids = ob.Bids[:index]
 		} else {
-			ob.Bids = catalog
+			ob.Bids = append(ob.Bids[:index], ob.Bids[index+1:]...)
 		}
 	}
 }
@@ -180,17 +183,17 @@ func main_test() {
 
 func main() {
 	ob := New()
-	or := Order{1, 1, 2, 5, 20}
+	or := Order{1, 2, 2, 5, 20}
 	trades, rejects := ob.Match(&or)
 
-	trades, rejects = ob.Match(&Order{2, 1, 2, 10, 10})
-	trades, rejects = ob.Match(&Order{3, 1, 2, 15, 30})
-	trades, rejects = ob.Match(&Order{4, 1, 2, 25, 25})
-	trades, rejects = ob.Match(&Order{5, 1, 2, 35, 40})
+	trades, rejects = ob.Match(&Order{2, 2, 2, 10, 10})
+	trades, rejects = ob.Match(&Order{3, 2, 2, 15, 30})
+	trades, rejects = ob.Match(&Order{4, 2, 2, 25, 25})
+	trades, rejects = ob.Match(&Order{5, 2, 2, 35, 40})
 
 	ob.Print("")
 
-	trades, rejects = ob.Match(&Order{6, 2, 2, 68, 5})
+	trades, rejects = ob.Match(&Order{6, 1, 2, 5, 55})
 	//trades, rejects = ob.Match(&Order{7, 2, 2, 1, 5})
 
 	ob.Print("")

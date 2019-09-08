@@ -42,13 +42,11 @@ func (ob *Orderbook) MatchBid(order *Order) ([]*Trade, *Order) {
 	Trades := make([]*Trade, 0)
 	for {
 		index := ob.BestAsk(order)
-		//fmt.Println("kek")
 		if index == -1 {
 			ob.Bids = append(ob.Bids, order)
 			return Trades, order
 		}
 		ask := ob.Asks[index]
-		fmt.Println("IndexBid", index)
 		if ask.Volume >= order.Volume {
 			fmt.Println("LOL")
 			trade := Trade{order, ask, order.Volume, ask.Price}
@@ -84,7 +82,6 @@ func (ob *Orderbook) MatchAsk(order *Order) ([]*Trade, *Order) {
 			return Trades, order
 		}
 		bid := ob.Bids[index]
-		fmt.Println("IndexAsk", index)
 		if bid.Volume >= order.Volume {
 			trade := Trade{bid, order, order.Volume, bid.Price}
 			Trades = append(Trades, &trade)
@@ -119,11 +116,10 @@ func (ob *Orderbook) BestBid(order *Order) int {
 	isLimit := order.Kind == 2
 	for i := 0; i < len(ob.Bids); i++ {
 		bid := ob.Bids[i]
-		//fmt.Println("ddd")
 		if isLimit && bid.Price < order.Price {
 			continue
 		}
-		if bid.Price > bestPrice {
+		if bid.Price >= bestPrice {
 			index = i
 			flag = 1
 			bestPrice = bid.Price
@@ -145,11 +141,10 @@ func (ob *Orderbook) BestAsk(order *Order) int {
 	isLimit := order.Kind == 2
 	for i := 0; i < len(ob.Asks); i++ {
 		ask := ob.Asks[i]
-		///fmt.Println("ddddd")
 		if isLimit && ask.Price > order.Price {
 			continue
 		}
-		if ask.Price < bestPrice {
+		if ask.Price <= bestPrice {
 			index = i
 			flag = 1
 			bestPrice = ask.Price
@@ -194,17 +189,17 @@ func main_test() {
 
 func main() {
 	ob := New()
-	or := Order{1, 2, 2, 5, 20}
+	or := Order{1, 1, 2, 5, 200}
 	trades, rejects := ob.Match(&or)
 
-	trades, rejects = ob.Match(&Order{2, 2, 2, 10, 10})
-	trades, rejects = ob.Match(&Order{3, 2, 2, 15, 30})
-	trades, rejects = ob.Match(&Order{4, 2, 2, 25, 25})
-	trades, rejects = ob.Match(&Order{5, 2, 2, 35, 40})
+	trades, rejects = ob.Match(&Order{2, 1, 2, 10, 100})
+	trades, rejects = ob.Match(&Order{3, 1, 2, 15, 300})
+	trades, rejects = ob.Match(&Order{4, 1, 2, 25, 250})
+	trades, rejects = ob.Match(&Order{5, 1, 2, 35, 400})
 
 	ob.Print("")
 
-	trades, rejects = ob.Match(&Order{6, 1, 2, 15, 55})
+	trades, rejects = ob.Match(&Order{6, 2, 1, 1, 500})
 	//trades, rejects = ob.Match(&Order{7, 2, 2, 1, 5})
 
 	ob.Print("")

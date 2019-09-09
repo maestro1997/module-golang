@@ -172,6 +172,23 @@ func (ob *Orderbook) Print(text string) {
 	}
 }
 
+func (or *Order) PrintReject(text string) {
+	if or == nil {
+		fmt.Println("No rejects")
+		return
+	}
+	fmt.Print("Id ", or.ID, " Side ", or.Side, " Kind ", or.Kind, " Volume ", or.Volume, " Price ", or.Price, "\n")
+}
+
+func PrintTrades(trades []*Trade) {
+	fmt.Println("\nTrades Printing\n")
+	for i := 0; i < len(trades); i++ {
+		tr := trades[i]
+		fmt.Println("Ask ID ", tr.Ask.ID, " Bid ID ", tr.Bid.ID, " Volume ", tr.Volume, " Price ", tr.Price)
+	}
+	fmt.Println("")
+}
+
 func main_test() {
 	ob := New()
 	var or Order
@@ -199,10 +216,12 @@ func main() {
 
 	ob.Print("")
 
-	trades, rejects = ob.Match(&Order{6, 2, 1, 1, 500})
+	trades, rejects = ob.Match(&Order{6, 2, 2, 95, 50})
 	//trades, rejects = ob.Match(&Order{7, 2, 2, 1, 5})
 
 	ob.Print("")
+	PrintTrades(trades)
+	rejects.PrintReject("")
 
 	if trades == nil && rejects == nil {
 		fmt.Println("")

@@ -1,29 +1,10 @@
-package main
-
-import "fmt"
+package orderbook
 
 type Orderbook struct {
 	Asks []*Order
 	Bids []*Order
 }
 
-type Trade struct {
-	Bid    *Order
-	Ask    *Order
-	Volume uint64
-	Price  uint64
-}
-
-type Order struct {
-	ID   int
-	Side int8
-	Kind int8
-
-	Volume uint64
-	Price  uint64
-}
-
-//////////////////////////////////////////
 func New() *Orderbook {
 	Orderbook := &Orderbook{}
 	Orderbook.Asks = []*Order{}
@@ -32,10 +13,23 @@ func New() *Orderbook {
 }
 
 func (ob *Orderbook) Match(order *Order) ([]*Trade, *Order) {
+	var t1 []*Trade
+	var t2 *Order
 	if order.Side == 1 {
-		return ob.MatchBid(order)
+		t1, t2 = ob.MatchBid(order)
+	} else {
+		t1, t2 = ob.MatchAsk(order)
 	}
-	return ob.MatchAsk(order)
+	for i := 0; i < len(t1); i++ {
+		for j := 0; j < len(t1)-1; j++ {
+			if t1[j].Volume > t1[j+1].Volume {
+				temp := t1[j]
+				t1[j] = t1[j+1]
+				t1[j+1] = temp
+			}
+		}
+	}
+	return t1, t2
 }
 
 func (ob *Orderbook) MatchBid(order *Order) ([]*Trade, *Order) {
@@ -43,12 +37,14 @@ func (ob *Orderbook) MatchBid(order *Order) ([]*Trade, *Order) {
 	for {
 		index := ob.BestAsk(order)
 		if index == -1 {
+			if order.Price == 0 {
+				return Trades, order
+			}
 			ob.Bids = append(ob.Bids, order)
-			return Trades, order
+			return Trades, nil
 		}
 		ask := ob.Asks[index]
 		if ask.Volume >= order.Volume {
-			fmt.Println("LOL")
 			trade := Trade{order, ask, order.Volume, ask.Price}
 			Trades = append(Trades, &trade)
 			ask.Volume = ask.Volume - order.Volume
@@ -63,8 +59,7 @@ func (ob *Orderbook) MatchBid(order *Order) ([]*Trade, *Order) {
 		}
 		trade := Trade{order, ask, ask.Volume, ask.Price}
 		Trades = append(Trades, &trade)
-		fmt.Println(order.Volume)
-		order.Volume -= ask.Volume
+		order.Volume = order.Volume - ask.Volume
 		if index == len(ob.Asks)-1 {
 			ob.Asks = ob.Asks[:index]
 		} else {
@@ -78,8 +73,11 @@ func (ob *Orderbook) MatchAsk(order *Order) ([]*Trade, *Order) {
 	for {
 		index := ob.BestBid(order)
 		if index == -1 {
+			if order.Price == 0 { // for market order
+				return Trades, order
+			}
 			ob.Asks = append(ob.Asks, order)
-			return Trades, order
+			return Trades, nil
 		}
 		bid := ob.Bids[index]
 		if bid.Volume >= order.Volume {
@@ -154,76 +152,4 @@ func (ob *Orderbook) BestAsk(order *Order) int {
 		return index
 	}
 	return -1
-}
-
-func (ob *Orderbook) Print(text string) {
-	fmt.Println("\nPrinting Orderbook", text)
-	fmt.Println("ASKS :")
-	var i int
-	var or Order
-	for i = 0; i < len(ob.Asks); i++ {
-		or = *ob.Asks[i]
-		fmt.Println(or.ID, or.Side, or.Kind, "Volume: ", or.Volume, "Price: ", or.Price)
-	}
-	fmt.Println("Bids :")
-	for i = 0; i < len(ob.Bids); i++ {
-		or = *ob.Bids[i]
-		fmt.Println(or.ID, or.Side, or.Kind, "Volume: ", or.Volume, "Price: ", or.Price)
-	}
-}
-
-func (or *Order) PrintReject(text string) {
-	if or == nil {
-		fmt.Println("No rejects")
-		return
-	}
-	fmt.Print("Id ", or.ID, " Side ", or.Side, " Kind ", or.Kind, " Volume ", or.Volume, " Price ", or.Price, "\n")
-}
-
-func PrintTrades(trades []*Trade) {
-	fmt.Println("\nTrades Printing\n")
-	for i := 0; i < len(trades); i++ {
-		tr := trades[i]
-		fmt.Println("Ask ID ", tr.Ask.ID, " Bid ID ", tr.Bid.ID, " Volume ", tr.Volume, " Price ", tr.Price)
-	}
-	fmt.Println("")
-}
-
-func main_test() {
-	ob := New()
-	var or Order
-	trades, rejects := ob.Match(&or)
-	var i uint64
-	for i = 0; i < 10; i++ {
-		or = Order{int(i), (1 + int8(i%2)), 2, 5 * i, 20 * i}
-		trades, rejects = ob.Match(&or)
-	}
-
-	if trades != nil && rejects != nil {
-		fmt.Println(1)
-	}
-}
-
-func main() {
-	ob := New()
-	or := Order{1, 1, 2, 5, 200}
-	trades, rejects := ob.Match(&or)
-
-	trades, rejects = ob.Match(&Order{2, 1, 2, 10, 100})
-	trades, rejects = ob.Match(&Order{3, 1, 2, 15, 300})
-	trades, rejects = ob.Match(&Order{4, 1, 2, 25, 250})
-	trades, rejects = ob.Match(&Order{5, 1, 2, 35, 400})
-
-	ob.Print("")
-
-	trades, rejects = ob.Match(&Order{6, 2, 2, 95, 50})
-	//trades, rejects = ob.Match(&Order{7, 2, 2, 1, 5})
-
-	ob.Print("")
-	PrintTrades(trades)
-	rejects.PrintReject("")
-
-	if trades == nil && rejects == nil {
-		fmt.Println("")
-	}
 }
